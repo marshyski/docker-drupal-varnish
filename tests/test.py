@@ -35,4 +35,4 @@ class MyLocust(HttpLocust):
     task_set = MyTaskSet
     min_wait = 5000
     max_wait = 15000
-    host = "http://test.woundedwear.org"
+    host = "http://localhost/"
