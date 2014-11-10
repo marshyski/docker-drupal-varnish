@@ -1,0 +1,11 @@
+/var/log/httpd/*log {
+    compress
+    dateext
+    rotate 3
+    size 10M
+    notifempty
+    missingok
+    postrotate
+        /bin/systemctl reload httpd.service > /dev/null 2>/dev/null || true
+    endscript
+}
