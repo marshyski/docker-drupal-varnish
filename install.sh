@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Install base packages for Drupal
-yum install -y httpd ssmtp community-mysql php php-cli php-common php-mysql php-gd php-mbstring
+yum install -y httpd varnish ssmtp community-mysql php php-cli php-common php-mysql php-gd php-mbstring
 
 #Install Google PageSpeed RPM
 yum install -y https://dl-ssl.google.com/dl/linux/direct/mod-pagespeed-stable_current_x86_64.rpm

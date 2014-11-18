@@ -14,3 +14,4 @@ php-pear-1.9.5-3.fc20.noarch
 php-pecl-jsonc-1.3.6-1.fc20.x86_64
 php-process-5.5.18-1.fc20.x86_64
 php-xml-5.5.18-1.fc20.x86_64
+varnish-3.0.5-1.fc20.x86_64
