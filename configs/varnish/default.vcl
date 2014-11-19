@@ -1,13 +1,3 @@
-/* Backend probes / healthchecks */
-probe basic {
-  /* Only test that backend's IP serves content for '/' */
-  .url = "/";
-  .interval = 10s;
-  .timeout = 2s;
-  .window = 8;
-  .threshold = 6;
-}
-
 /* Backend definitions.*/
 backend default {
   /* Default backend on the same machine. WARNING: timeouts could be not big enought for certain POST request */
@@ -65,11 +55,9 @@ sub vcl_recv {
   /* 6th: Decide if we should deal with a request (mostly copied from built-in logic) */
   if (req.request != "GET" &&
       req.request != "HEAD" &&
-      req.request != "PUT" &&
       req.request != "POST" &&
       req.request != "TRACE" &&
-      req.request != "OPTIONS" &&
-      req.request != "DELETE") {
+      req.request != "OPTIONS") {
     /* Non-RFC2616 or CONNECT which is weird. */
     return (pipe);
   }
@@ -133,9 +121,8 @@ sub vcl_recv {
     /* Prefix cookies we want to preserve with one space */
     /* 'S{1,2}ESS[a-z0-9]+' is the regular expression matching a Drupal session cookie ({1,2} added for HTTPS support) */
     /* 'NO_CACHE' is usually set after a POST request to make sure issuing user see the results of his post */
-    /* 'OATMEAL' & 'CHOCOLATECHIP' are special cookies used by Drupal's Bakery module to provide Single Sign On */
     /* Keep in mind we should add here any cookie that should reach the backend such as splahs avoiding cookies */
-    set req.http.Cookie = regsuball(req.http.Cookie, ";(S{1,2}ESS[a-z0-9]+|NO_CACHE|OATMEAL|CHOCOLATECHIP)=", "; \1=");
+    set req.http.Cookie = regsuball(req.http.Cookie, ";(S{1,2}ESS[a-z0-9]+|NO_CACHE)=", "; \1=");
     /* Remove from the header any single Cookie not prefixed with a space until next ';' separator */
     set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
     /* Remove any '; ' at the start or the end of the header */
@@ -150,9 +137,7 @@ sub vcl_recv {
   /* 13th: Session cookie & special cookies bypass caching stage */
   if (req.http.Cookie ~ "SESS" ||
       req.http.Cookie ~ "SSESS" ||
-      req.http.Cookie ~ "NO_CACHE" ||
-      req.http.Cookie ~ "OATMEAL" ||
-      req.http.Cookie ~ "CHOCOLATECHIP") {
+      req.http.Cookie ~ "NO_CACHE") {
     return (pass);
   }
 
@@ -168,13 +153,18 @@ sub vcl_pipe {
   return (pipe);
 }
 
-
 sub vcl_hash {
-  /* Hash cookie data */
-  if (req.http.Cookie) {
-    /* Include cookie in cache hash */
-    hash_data(req.http.Cookie);
+  hash_data(req.url);
+    if (req.http.host) {
+        hash_data(req.http.host);
+    } else {
+        hash_data(server.ip);
+    }
+  /* ELB sets called X-Forwarded-Proto need this for SS: termination */
+  if (req.http.X-Forwarded-Proto) {
+    hash_data(req.http.X-Forwarded-Proto);
   }
+  return (hash);
 }
 
 sub vcl_hit {
@@ -235,7 +225,7 @@ sub vcl_fetch {
   if (beresp.ttl <= 0s) {
     /* Varnish determined the object was not cacheable */
     set beresp.http.X-Cacheable = "NO:Not Cacheable";
-  } elsif (req.http.Cookie ~ "(SESS|SSESS|NO_CACHE|OATMEAL|CHOCOLATECHIP)") {
+  } elsif (req.http.Cookie ~ "(SESS|SSESS|NO_CACHE)") {
     /* We don't wish to cache content for logged in users or with certain cookies. Related with our 9th stage on vcl_recv */
     set beresp.http.X-Cacheable = "NO:Cookies";
   } elsif (beresp.http.Cache-Control ~ "private") {
