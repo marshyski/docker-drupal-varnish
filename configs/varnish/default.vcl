@@ -6,7 +6,6 @@ backend default {
   .connect_timeout = 60s;
   .first_byte_timeout = 60s;
   .between_bytes_timeout = 60s;
-  .probe = basic;
 }
 
 /* Access Control Lists */
