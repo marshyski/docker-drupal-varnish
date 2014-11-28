@@ -1,4 +1,4 @@
-WoundedWear
+docker-drupal-varnish
 ===========
 
-Drupal Deployment on Fedora 20 with sSMTP
+Drupal deployment on Fedora 20 with Varnish and sSMTP
